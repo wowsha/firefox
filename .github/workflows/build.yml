@@ -1,0 +1,40 @@
+name: Build Firefox in /tmp
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip curl git wget unzip \
+            autoconf2.13 build-essential libgtk-3-dev \
+            libdbus-glib-1-dev libxt-dev yasm \
+            libpulse-dev libasound2-dev libgconf-2-4 \
+            libxss-dev libnss3-dev libx11-xcb-dev
+
+      - name: Clone Firefox source to /tmp
+        run: |
+          git clone https://github.com/mozilla/gecko-dev.git /tmp/firefox
+          cd /tmp/firefox
+          git checkout default  # or 'release' or 'esr'
+
+      - name: Bootstrap Firefox build system
+        run: |
+          cd /tmp/firefox
+          ./mach bootstrap --application-choice browser --no-interactive --vcs-checkout=gecko-dev
+
+      - name: Build Firefox
+        run: |
+          cd /tmp/firefox
+          ./mach build
+
+      - name: Upload Firefox Build Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-build-linux
+          path: /tmp/firefox/obj-*/dist/
